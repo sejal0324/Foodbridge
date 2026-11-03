@@ -34,3 +34,19 @@ Thumbs.db
 # Database backups
 *.dump
 *.bak
+
+# Python (additional)
+*.egg-info/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Test reports
+playwright-report/
+test-results/
+
+# Locally stored uploads (e.g. verification documents in development)
+uploads/

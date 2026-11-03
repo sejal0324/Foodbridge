@@ -1,0 +1,12 @@
+# FoodBridge AI: local development stack.
+#
+#   cp .env.example .env      # fill in generated secrets
+#   docker compose up -d db   # start PostgreSQL + PostGIS
+#
+# Application services (backend, ai-service, frontend) are added here as each
+# one gains a Dockerfile in its implementation phase.
+name: foodbridge
+
+include:
+  - path: ./database/docker-compose.yml
+    env_file: ./.env
