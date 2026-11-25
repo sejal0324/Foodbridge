@@ -1,0 +1,37 @@
+{
+  "name": "foodbridge-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FoodBridge AI — Predict. Match. Redistribute. Root orchestration for the backend, AI service, frontend and database.",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "setup": "node deployment/scripts/setup.mjs",
+    "dev": "npm run db:up && concurrently --kill-others-on-fail --names api,ai,web --prefix-colors green,magenta,cyan \"npm:dev:api\" \"npm:dev:ai\" \"npm:dev:web\"",
+    "dev:api": "npm --prefix backend run dev",
+    "dev:ai": "node deployment/scripts/run-ai.mjs --reload",
+    "dev:web": "npm --prefix frontend run dev",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build",
+    "test": "npm run test:backend && npm run test:ai && npm run test:frontend",
+    "test:backend": "npm --prefix backend test",
+    "test:ai": "node deployment/scripts/run-ai.mjs --pytest",
+    "test:frontend": "npm --prefix frontend test",
+    "test:integration": "node deployment/scripts/run-integration.mjs",
+    "test:e2e": "node deployment/scripts/run-e2e.mjs",
+    "lint": "npm --prefix backend run lint && npm --prefix frontend run lint && node deployment/scripts/run-ai.mjs --ruff",
+    "typecheck": "npm --prefix backend run typecheck && npm --prefix frontend run typecheck",
+    "db:up": "docker compose up -d --wait db",
+    "db:down": "docker compose stop db",
+    "db:migrate": "npm --prefix backend run db:migrate",
+    "db:seed": "npm --prefix backend run db:seed",
+    "db:reset": "npm --prefix backend run db:reset",
+    "admin:create": "npm --prefix backend run admin:create --",
+    "stack:up": "docker compose --profile app up -d --build --wait",
+    "stack:down": "docker compose --profile app down",
+    "stack:logs": "docker compose --profile app logs -f --tail=100"
+  },
+  "devDependencies": {
+    "concurrently": "10.0.6"
+  }
+}

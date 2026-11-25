@@ -1,8 +1,7 @@
 # FoodBridge AI: System Architecture
 
-> **Status:** Phase 0 design. This document describes the *target* architecture.
-> What is actually built and tested is tracked in
-> [IMPLEMENTATION_PROGRESS.md](IMPLEMENTATION_PROGRESS.md).
+> **Status:** Implemented. This document describes the architecture as built; implementation status and test
+> evidence are in [IMPLEMENTATION_PROGRESS.md](IMPLEMENTATION_PROGRESS.md) and [TESTING_REPORT.md](TESTING_REPORT.md).
 > Related: [DATABASE_DESIGN.md](DATABASE_DESIGN.md) · [ER_DIAGRAM.md](ER_DIAGRAM.md)
 
 ---
@@ -20,7 +19,7 @@
    plan or LLM suggestion becomes a state change only after a human confirms it
    and the backend validates it.
 4. **Degrade, never fake.** Optional dependencies (AI service, LLM, Google Maps,
-   email, SMS, Razorpay) can fail or be unconfigured. Core donation workflows keep
+   email, Razorpay) can fail or be unconfigured. Core donation workflows keep
    working and the UI labels what is unavailable, estimated or stale.
 5. **PostgreSQL is the only stateful infrastructure.** It stores data, the job
    queue, the notification outbox and idempotency records. Redis or a message broker
@@ -64,7 +63,7 @@ flowchart LR
   REST -- "internal HTTP + service token" --> AI
   WORKER -- "internal HTTP + service token" --> AI
   REST --> GROUTES["Google Routes / Geocoding"]
-  WORKER --> MSG["Email / SMS providers"]
+  WORKER --> MSG["Email provider"]
   REST <--> RZP["Razorpay (optional)"]
   LLMSTEP --> LLMP["Gemini / OpenAI (optional)"]
 ```
@@ -89,7 +88,7 @@ flowchart LR
 | Ranking score and explanation | AI service (deterministic weighted model); backend falls back to labelled distance order | LLM |
 | Reserving quantity | Backend transaction with conditional updates and constraints | AI optimiser, LLM |
 | Allocation plan across NGOs/donors | AI optimiser *recommends*; a human confirms; backend validates and executes | AI service alone |
-| Pickup identity verification | Backend token/OTP validation **and** a human check by the donor | GPS, AI |
+| Pickup identity verification | Backend QR-pass validation **and** a human photo-ID check by the donor | GPS, AI |
 | Handover / delivery quantities | Two-way human confirmation recorded by the backend | GPS arrival, AI |
 | Reward points, service fees | Backend, after a two-way confirmed handover, idempotently | LLM, frontend |
 | Food safety | Humans (donor confirmation, NGO judgement) | AI. It may only *flag* missing information |
@@ -117,7 +116,7 @@ HTTP request
 - **Consistent API envelope:** `{ "data": … }` on success and
   `{ "error": { "code", "message", "details?", "requestId" } }` on failure.
 - **Logging:** structured JSON (pino) with request IDs and a redaction list
-  (passwords, tokens, OTPs, QR payloads, API keys, payment data).
+  (passwords, tokens, QR payloads, API keys, payment data).
 
 ---
 
@@ -192,12 +191,11 @@ sequenceDiagram
   actor Donor
   Rep->>API: GET pickup pass (authenticated)
   API-->>Rep: QR containing an opaque single-use token (no personal data)
-  Donor->>API: POST /api/pickups/verify-qr (scanned token)
-  API->>API: hash lookup · expiry · not consumed · donor owns pickup · rep active
+  Donor->>API: POST /api/pickups/verify-qr (scanned, typed or pasted pass code)
+  API->>API: hash lookup · expiry · not consumed · donor owns pickup · rep active · consume once
   API-->>Donor: representative name, photo, ID type + last 4 digits
-  API->>Rep: OTP via SMS (dev: clearly labelled log-only mode)
-  Donor->>API: POST /api/pickups/verify-otp (code read out by rep)
-  Donor->>API: confirm physical ID check + handed-over quantity
+  Donor->>API: POST /api/pickups/confirm-identity (photo ID checked) → VERIFIED
+  Donor->>API: confirm handed-over quantity
   Rep->>API: confirm received quantity
   alt quantities match
     API->>API: handover CONFIRMED → reward credit + fee record (idempotent)
@@ -300,7 +298,7 @@ Nothing else is affected.
 | Per-request check | Verify the JWT signature, then load the session and user. Revoked sessions and suspended accounts are rejected **immediately**, not when the token expires |
 | CSRF | API calls carry the access token in the `Authorization` header (not a cookie). Cookie-based endpoints (refresh, logout) rely on SameSite=Strict plus an `Origin` check |
 | Admin accounts | Created only by a server-side CLI command. There is no public admin registration |
-| Rate limiting | Login, registration, refresh, QR verification, OTP verification/resend, assistant |
+| Rate limiting | Login, registration, refresh, QR verification, assistant |
 | Lockout | Progressive lockout after repeated failed logins (`users.failed_login_attempts`, `locked_until`) |
 
 **Deployment constraint:** the refresh cookie must be first-party, so in
@@ -320,7 +318,6 @@ so it may connect to the API host directly.
 | LLM down or unconfigured | Assistant reports it is unavailable | Provider adapter returns a typed error |
 | Google Routes down or unconfigured | Distances labelled "straight-line estimate"; ETA shown as unavailable | `distance_source` column, UI label |
 | Invalid / expired / reused QR | Pickup rejected with a reason; attempt logged | Hash lookup + conditional consume + `pickup_verifications` |
-| Expired OTP / too many attempts | A new OTP must be requested (resends are limited) | `otp_verifications` limits |
 | Concurrent reservations | Only available quantity is reserved; the loser gets `409` | Conditional `UPDATE` + CHECK constraints |
 | Duplicate submission | Same response is replayed | `Idempotency-Key` + `idempotency_records` |
 | Tracking disconnect | Last known position with its timestamp, labelled stale | `last_recorded_at` + staleness threshold |
@@ -336,8 +333,8 @@ so it may connect to the API host directly.
 
 - Configuration is validated at startup (Zod in Node, pydantic-settings in
   Python). Invalid or missing required config stops the process.
-- Production guards: the backend refuses to start if `OTP_DEV_MODE=true` with
-  `NODE_ENV=production`, or if secrets are too short or still placeholders.
+- Production guards: the backend refuses to start with `NODE_ENV=production` if the
+  development email provider is selected, or if secrets are too short or still placeholders.
 - Secrets live only in environment variables (`.env` locally, the platform
   secret store in production). `.env.example` documents every variable.
 
@@ -381,14 +378,21 @@ so it may connect to the API host directly.
 | D12 | Python 3.12 managed by `uv` | System Python 3.10 | Current numpy, pandas and scikit-learn need newer Python; matches the Docker image |
 | D13 | Rewards and fees recorded at **two-way confirmed handover** | At delivery confirmation | Spec §19/§20 ("after verified handover"); the donor's reward does not depend on the NGO's later steps |
 
-## 15. Open questions for the product owner
+## 15. Product decisions (resolved 2026-11-03)
 
-1. **Reward formula** outside the proposed brackets: how many points for under
-   10 meals, and how points scale above 100 meals (proposal: linear at the top
-   bracket's rate, 1.4 points/meal).
-2. **Service fee:** amount per completed collection, and whether GST is added
-   on top or included.
-3. **SMS provider** for pickup OTPs (e.g. MSG91, Twilio). Until one is
-   configured, OTP works only in the clearly labelled development mode.
-4. **Units:** is the proposed set (`MEALS, PORTIONS, KG, LITRES, PACKETS, ITEMS`)
-   enough? Matching only pairs equal units.
+| Question | Decision | Where implemented |
+|---|---|---|
+| Units | `MEALS`, `PACKETS`, `BOXES` only; whole numbers | DB CHECKs, validators |
+| Reward formula | 10 points per verified meal; 15 per meal after 500 lifetime verified meals (a handover crossing 500 is split); 10 points per verified packet or box order | `reward_rules`, `domain/rewards.ts` ([REWARD_SYSTEM.md](REWARD_SYSTEM.md)) |
+| Service fee | ₹5 per verified meal, packet or box; GST configurable, separate and off by default (professional validation required) | `service_fee_rules`, `billing.tax`, `domain/fees.ts` ([NGO_BILLING.md](NGO_BILLING.md)) |
+| Pickup verification | QR pass, then the donor's photo-ID check, then two-way quantity confirmation; no code is sent to the representative's phone (product owner decision, 2026-11-04) | `pickup.service.ts` ([PICKUP_VERIFICATION.md](PICKUP_VERIFICATION.md)) |
+| Maps in the browser | OpenStreetMap (Leaflet) by default; Google Maps JS when a browser key is configured | frontend `MapView` |
+
+## 16. Deviations from the master prompt
+
+| Item | Deviation | Reason |
+|---|---|---|
+| Matching location | Hard eligibility filters run in the backend (PostGIS); weighted scoring runs in the AI service | Eligibility is a business rule tied to authorisation; avoids duplicated logic |
+| Google road data | Server-side Google calls are made by the backend only; the AI service receives matrices | One place for keys and for "estimate vs road" labelling |
+| Dockerfiles | All Dockerfiles live in `deployment/docker/` (not inside each service folder) | User instruction: deployment assets live in `deployment/` |
+| Browser push | In-app, Socket.IO, email and in-tab browser notifications are implemented; background Web Push is not | Requires VAPID keys and a service worker; documented as future work |

@@ -1,0 +1,191 @@
+{
+  "model_name": "surplus_forecaster",
+  "version": "sf-20261103-c261c11a",
+  "algorithm": "LinearRegression",
+  "selected_model": "linear_regression",
+  "trained_at": "2026-11-03T10:23:36Z",
+  "training_data_label": "SYNTHETIC",
+  "dataset": {
+    "file": "datasets/synthetic_restaurant_metrics.csv",
+    "sha256": "b24db29e80da16c8d3100c675d58f2fdf078197709ca6017f8760e91101977a2",
+    "rows_raw": 33458,
+    "rows_clean": 33446
+  },
+  "row_counts": {
+    "train": 20909,
+    "validation": 5042,
+    "test": 5020
+  },
+  "split": {
+    "method": "chronological by target date, no shuffling",
+    "train": [
+      "2025-09-01",
+      "2026-06-07"
+    ],
+    "validation": [
+      "2026-06-08",
+      "2026-08-06"
+    ],
+    "test": [
+      "2026-08-07",
+      "2026-10-05"
+    ]
+  },
+  "features": [
+    "last_surplus_norm",
+    "roll7_mean_surplus_norm",
+    "roll28_mean_surplus_norm",
+    "roll7_std_surplus_norm",
+    "same_weekday_mean4_norm",
+    "surplus_ratio_28",
+    "prepared_ref_norm",
+    "planned_prepared_provided",
+    "expected_surplus_norm",
+    "horizon_days",
+    "dow_0",
+    "dow_1",
+    "dow_2",
+    "dow_3",
+    "dow_4",
+    "dow_5",
+    "dow_6",
+    "is_weekend",
+    "month_sin",
+    "month_cos",
+    "is_holiday",
+    "has_special_event",
+    "meal_breakfast",
+    "meal_lunch",
+    "meal_dinner",
+    "meal_all_day"
+  ],
+  "target": "surplus_qty / scale; scale = mean prepared_qty of the last 28 observations (>=1)",
+  "min_history_rows": 14,
+  "training_horizon_days": [
+    1,
+    31
+  ],
+  "planned_prepared_share": 0.3,
+  "metrics": {
+    "selection_metric": "validation_mae",
+    "selected": "linear_regression",
+    "selected_beats_baseline_on_validation": true,
+    "models": {
+      "baseline": {
+        "algorithm": "SameWeekdayTrailingMean",
+        "validation": {
+          "mae": 19.9352,
+          "rmse": 31.6154
+        },
+        "test": {
+          "mae": 20.8749,
+          "rmse": 33.2403
+        }
+      },
+      "linear_regression": {
+        "algorithm": "LinearRegression",
+        "validation": {
+          "mae": 18.0903,
+          "rmse": 28.4332
+        },
+        "test": {
+          "mae": 19.406,
+          "rmse": 30.1086
+        },
+        "serialized_kib": 0.9
+      },
+      "random_forest": {
+        "algorithm": "RandomForestRegressor",
+        "validation": {
+          "mae": 18.0992,
+          "rmse": 28.5488
+        },
+        "test": {
+          "mae": 19.3584,
+          "rmse": 30.1102
+        },
+        "serialized_kib": 2022.4
+      },
+      "hist_gradient_boosting": {
+        "algorithm": "HistGradientBoostingRegressor",
+        "validation": {
+          "mae": 18.7584,
+          "rmse": 29.2237
+        },
+        "test": {
+          "mae": 19.4191,
+          "rmse": 30.0851
+        },
+        "serialized_kib": 570.0
+      }
+    }
+  },
+  "interval": {
+    "lower_quantile": 0.1,
+    "upper_quantile": 0.9,
+    "lower": -0.141175,
+    "upper": 0.178008,
+    "source": "validation residuals of the selected model, normalised by scale",
+    "test_coverage": 0.7452
+  },
+  "hyperparameters": {
+    "linear_regression": {
+      "copy_X": true,
+      "fit_intercept": true,
+      "positive": false,
+      "tol": 1e-06
+    },
+    "random_forest": {
+      "bootstrap": true,
+      "ccp_alpha": 0.0,
+      "criterion": "squared_error",
+      "max_depth": 12,
+      "max_features": 0.5,
+      "max_leaf_nodes": null,
+      "max_samples": null,
+      "min_impurity_decrease": 0.0,
+      "min_samples_leaf": 20,
+      "min_samples_split": 2,
+      "min_weight_fraction_leaf": 0.0,
+      "monotonic_cst": null,
+      "n_estimators": 120,
+      "oob_score": false,
+      "random_state": 42,
+      "verbose": 0,
+      "warm_start": false
+    },
+    "hist_gradient_boosting": {
+      "categorical_features": "from_dtype",
+      "early_stopping": false,
+      "interaction_cst": null,
+      "l2_regularization": 1.0,
+      "learning_rate": 0.05,
+      "loss": "squared_error",
+      "max_bins": 255,
+      "max_depth": null,
+      "max_features": 1.0,
+      "max_iter": 400,
+      "max_leaf_nodes": 31,
+      "min_samples_leaf": 40,
+      "monotonic_cst": null,
+      "n_iter_no_change": 10,
+      "quantile": null,
+      "random_state": 42,
+      "scoring": "loss",
+      "tol": 1e-07,
+      "validation_fraction": 0.1,
+      "verbose": 0,
+      "warm_start": false
+    }
+  },
+  "library_versions": {
+    "python": "3.12.16",
+    "scikit-learn": "1.9.1",
+    "numpy": "2.5.4",
+    "pandas": "3.1.0"
+  },
+  "seed": 42,
+  "artifact_file": "surplus_forecaster.joblib",
+  "artifact_sha256": "c261c11a75295b48b9d10a023bc9d3d34ff0660c6e116dacc2352340a9717f32",
+  "artifact_bytes": 1134
+}

@@ -1,6 +1,6 @@
 # FoodBridge AI: Entity-Relationship Diagrams
 
-> **Status:** Phase 0 design. Column-level detail, constraints and rationale are in
+> **Status:** Implemented (53 tables, migrations 0001–0012). Column-level detail, constraints and rationale are in
 > [DATABASE_DESIGN.md](DATABASE_DESIGN.md). These diagrams show keys and the main
 > attributes only.
 >
@@ -109,7 +109,7 @@ erDiagram
         geography location "Point 4326"
         boolean accepts_veg
         boolean accepts_non_veg
-        numeric max_daily_capacity
+        int max_daily_capacity
         numeric collection_radius_km
         int beneficiaries_count
         text verification_status
@@ -172,8 +172,8 @@ erDiagram
         text food_name
         uuid category_id FK
         text dietary_type "VEG | NON_VEG"
-        numeric quantity "> 0"
-        numeric reserved_quantity "0..quantity"
+        int quantity "> 0"
+        int reserved_quantity "0..quantity"
         text unit
         timestamptz prepared_at
         timestamptz pickup_deadline
@@ -193,19 +193,19 @@ erDiagram
         uuid id PK
         uuid donation_id FK
         uuid ngo_id FK
-        numeric requested_quantity
-        numeric approved_quantity
+        int requested_quantity
+        int approved_quantity
         text status "one live per NGO+donation"
     }
     donation_allocations {
         uuid id PK
         uuid donation_id FK
         uuid ngo_id FK
-        numeric quantity
+        int quantity
         text source
         uuid donation_request_id FK, UK
         uuid assistance_offer_id FK, UK
-        numeric handed_over_quantity
+        int handed_over_quantity
         text status
     }
     food_assistance_requests {
@@ -213,9 +213,9 @@ erDiagram
         uuid ngo_id FK
         uuid category_id FK
         text dietary_requirement "VEG_ONLY | ANY"
-        numeric quantity_required
-        numeric quantity_committed "0..required"
-        numeric quantity_received
+        int quantity_required
+        int quantity_committed "0..required"
+        int quantity_received
         timestamptz needed_from
         timestamptz needed_until
         text urgency
@@ -226,9 +226,9 @@ erDiagram
         uuid id PK
         uuid assistance_request_id FK
         uuid donor_id FK
-        numeric offered_quantity
-        numeric accepted_quantity
-        numeric confirmed_quantity "actual food"
+        int offered_quantity
+        int accepted_quantity
+        int confirmed_quantity "actual food"
         uuid donation_id FK, UK
         text status "one live per donor+request"
     }
@@ -250,7 +250,6 @@ erDiagram
     donation_allocations ||--o{ pickup_assignments : "collected by"
     ngo_representatives ||--o{ pickup_assignments : "assigned"
     pickup_assignments ||--o{ pickup_tokens : "QR passes"
-    pickup_assignments ||--o{ otp_verifications : "OTPs"
     pickup_assignments ||--o{ pickup_verifications : "attempt log"
     pickup_assignments ||--o| handover_records : "handover"
     pickup_assignments ||--o| delivery_confirmations : "delivery"
@@ -265,7 +264,6 @@ erDiagram
         uuid representative_id FK
         text status
         timestamptz qr_verified_at
-        timestamptz otp_verified_at
         timestamptz identity_confirmed_at
     }
     pickup_tokens {
@@ -276,33 +274,24 @@ erDiagram
         timestamptz consumed_at "single use"
         timestamptz revoked_at
     }
-    otp_verifications {
-        uuid id PK
-        uuid pickup_assignment_id FK
-        text otp_hash "HMAC, never raw"
-        timestamptz expires_at
-        smallint attempt_count
-        smallint max_attempts
-        text channel
-    }
     pickup_verifications {
         bigint id PK
         uuid pickup_assignment_id FK
-        text method "QR | OTP | IDENTITY_CHECK"
+        text method "QR | IDENTITY_CHECK (older rows: OTP)"
         text result
         text failure_reason
     }
     handover_records {
         uuid id PK
         uuid pickup_assignment_id FK, UK
-        numeric donor_confirmed_quantity
-        numeric ngo_received_quantity
+        int donor_confirmed_quantity
+        int ngo_received_quantity
         text status "CONFIRMED only if equal"
     }
     delivery_confirmations {
         uuid id PK
         uuid pickup_assignment_id FK, UK
-        numeric delivered_quantity
+        int delivered_quantity
         int beneficiaries_served
     }
     disputes {
@@ -310,7 +299,7 @@ erDiagram
         uuid allocation_id FK
         text type
         text status
-        numeric resolved_quantity
+        int resolved_quantity
     }
     tracking_sessions {
         uuid id PK
@@ -371,9 +360,10 @@ erDiagram
     }
     reward_rules {
         uuid id PK
-        text unit
-        numeric min_quantity
+        text unit "MEALS | PACKETS | BOXES"
+        text basis "PER_UNIT | PER_ORDER"
         int points
+        int lifetime_threshold "bracket start"
     }
     reward_tiers {
         uuid id PK
@@ -438,9 +428,9 @@ erDiagram
         uuid donor_id FK
         date metric_date
         text meal_period
-        numeric prepared_qty
-        numeric sold_qty
-        numeric surplus_qty
+        int prepared_qty
+        int sold_qty
+        int surplus_qty
         text data_source "SYNTHETIC is labelled"
     }
     model_versions {
@@ -455,7 +445,7 @@ erDiagram
         uuid id PK
         uuid donor_id FK
         date target_date
-        numeric predicted_quantity
+        int predicted_quantity
         uuid model_version_id FK
     }
     match_recommendations {
@@ -531,7 +521,7 @@ erDiagram
         uuid id PK
         uuid ngo_id FK
         date plan_date
-        numeric vehicle_capacity
+        int vehicle_capacity
         text solver_status
         text distance_source
     }

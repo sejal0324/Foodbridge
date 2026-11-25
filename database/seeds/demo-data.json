@@ -1,0 +1,545 @@
+{
+  "_comment": "DEVELOPMENT-ONLY demo data (synthetic, fictional organisations across India). Loaded by `npm run db:seed`. Never load into production.",
+  "password": "Demo-pass-2026",
+  "admin": {
+    "email": "admin@foodbridge.local",
+    "fullName": "Asha Rao (Admin)",
+    "password": "Admin-pass-2026"
+  },
+  "donors": [
+    {
+      "key": "spice",
+      "email": "spice.garden@demo.foodbridge.local",
+      "fullName": "Ravi Kulkarni",
+      "phone": "+919800000101",
+      "name": "Spice Garden Restaurant",
+      "businessType": "RESTAURANT",
+      "address": "Wakad Main Road, Wakad",
+      "city": "Pune",
+      "location": {
+        "lat": 18.5987,
+        "lng": 73.7645
+      },
+      "approve": true,
+      "baseMeals": 210,
+      "state": "Maharashtra"
+    },
+    {
+      "key": "sahyadri",
+      "email": "hotel.sahyadri@demo.foodbridge.local",
+      "fullName": "Neha Deshpande",
+      "phone": "+919800000102",
+      "name": "Hotel Sahyadri",
+      "businessType": "HOTEL",
+      "address": "Baner Road, Baner",
+      "city": "Pune",
+      "location": {
+        "lat": 18.559,
+        "lng": 73.7868
+      },
+      "approve": true,
+      "baseMeals": 320,
+      "state": "Maharashtra"
+    },
+    {
+      "key": "annapurna",
+      "email": "annapurna.caterers@demo.foodbridge.local",
+      "fullName": "Suresh Patil",
+      "phone": "+919800000103",
+      "name": "Annapurna Caterers",
+      "businessType": "CATERER",
+      "address": "Phase 1, Hinjewadi",
+      "city": "Pune",
+      "location": {
+        "lat": 18.5913,
+        "lng": 73.7389
+      },
+      "approve": true,
+      "baseMeals": 160,
+      "state": "Maharashtra"
+    },
+    {
+      "key": "greenleaf",
+      "email": "green.leaf@demo.foodbridge.local",
+      "fullName": "Isha Shah",
+      "phone": "+919800000104",
+      "name": "Green Leaf Cafe",
+      "businessType": "CAFETERIA",
+      "address": "Karve Road, Kothrud",
+      "city": "Pune",
+      "location": {
+        "lat": 18.5074,
+        "lng": 73.8077
+      },
+      "approve": false,
+      "baseMeals": 90,
+      "state": "Maharashtra"
+    }
+  ],
+  "ngos": [
+    {
+      "key": "helping",
+      "email": "helping.hands@demo.foodbridge.local",
+      "fullName": "Meera Joshi",
+      "phone": "+919800000201",
+      "name": "Helping Hands Foundation",
+      "address": "Phase 2, Hinjewadi",
+      "city": "Pune",
+      "location": {
+        "lat": 18.5886,
+        "lng": 73.7313
+      },
+      "approve": true,
+      "beneficiaries": 180,
+      "capacity": 300,
+      "radiusKm": 12,
+      "acceptsNonVeg": false,
+      "state": "Maharashtra"
+    },
+    {
+      "key": "rotibank",
+      "email": "roti.bank@demo.foodbridge.local",
+      "fullName": "Arjun Kale",
+      "phone": "+919800000202",
+      "name": "Roti Bank Pune",
+      "address": "Pashan Road, Baner",
+      "city": "Pune",
+      "location": {
+        "lat": 18.5562,
+        "lng": 73.7934
+      },
+      "approve": true,
+      "beneficiaries": 250,
+      "capacity": 400,
+      "radiusKm": 15,
+      "acceptsNonVeg": true,
+      "state": "Maharashtra"
+    },
+    {
+      "key": "seva",
+      "email": "seva.sadan@demo.foodbridge.local",
+      "fullName": "Kavita Nair",
+      "phone": "+919800000203",
+      "name": "Seva Sadan Trust",
+      "address": "Deccan Gymkhana",
+      "city": "Pune",
+      "location": {
+        "lat": 18.5167,
+        "lng": 73.8414
+      },
+      "approve": false,
+      "beneficiaries": 90,
+      "capacity": 120,
+      "radiusKm": 8,
+      "acceptsNonVeg": false,
+      "state": "Maharashtra"
+    }
+  ],
+  "cities": [
+    {
+      "city": "Delhi",
+      "state": "Delhi",
+      "donor": {
+        "key": "delhi-donor",
+        "email": "delhi.donor@demo.foodbridge.local",
+        "fullName": "Yamuna Kitchen Manager",
+        "phone": "+919800000300",
+        "name": "Yamuna Kitchen",
+        "businessType": "RESTAURANT",
+        "address": "Connaught Place, Delhi",
+        "city": "Delhi",
+        "state": "Delhi",
+        "location": {
+          "lat": 28.6315,
+          "lng": 77.2167
+        },
+        "approve": true,
+        "baseMeals": 150
+      },
+      "ngo": {
+        "key": "delhi-ngo",
+        "email": "delhi.ngo@demo.foodbridge.local",
+        "fullName": "Annadaan Seva Delhi Coordinator",
+        "phone": "+919800000400",
+        "name": "Annadaan Seva Delhi",
+        "address": "Karol Bagh, Delhi",
+        "city": "Delhi",
+        "state": "Delhi",
+        "location": {
+          "lat": 28.6519,
+          "lng": 77.1909
+        },
+        "approve": true,
+        "beneficiaries": 120,
+        "capacity": 250,
+        "radiusKm": 15,
+        "acceptsNonVeg": false
+      },
+      "donation": {
+        "foodName": "Chole chawal",
+        "dietaryType": "VEG",
+        "quantity": 90
+      }
+    },
+    {
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "donor": {
+        "key": "mumbai-donor",
+        "email": "mumbai.donor@demo.foodbridge.local",
+        "fullName": "Sea Breeze Kitchen Manager",
+        "phone": "+919800000301",
+        "name": "Sea Breeze Kitchen",
+        "businessType": "RESTAURANT",
+        "address": "Andheri East, Mumbai",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "location": {
+          "lat": 19.1136,
+          "lng": 72.8697
+        },
+        "approve": true,
+        "baseMeals": 165
+      },
+      "ngo": {
+        "key": "mumbai-ngo",
+        "email": "mumbai.ngo@demo.foodbridge.local",
+        "fullName": "Mumbai Meal Mission Coordinator",
+        "phone": "+919800000401",
+        "name": "Mumbai Meal Mission",
+        "address": "Bandra West, Mumbai",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "location": {
+          "lat": 19.0596,
+          "lng": 72.8295
+        },
+        "approve": true,
+        "beneficiaries": 140,
+        "capacity": 250,
+        "radiusKm": 15,
+        "acceptsNonVeg": false
+      },
+      "donation": {
+        "foodName": "Vegetable pulao",
+        "dietaryType": "VEG",
+        "quantity": 110
+      }
+    },
+    {
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "donor": {
+        "key": "bengaluru-donor",
+        "email": "bengaluru.donor@demo.foodbridge.local",
+        "fullName": "Garden City Caterers Manager",
+        "phone": "+919800000302",
+        "name": "Garden City Caterers",
+        "businessType": "RESTAURANT",
+        "address": "Koramangala, Bengaluru",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "location": {
+          "lat": 12.9352,
+          "lng": 77.6245
+        },
+        "approve": true,
+        "baseMeals": 180
+      },
+      "ngo": {
+        "key": "bengaluru-ngo",
+        "email": "bengaluru.ngo@demo.foodbridge.local",
+        "fullName": "Bengaluru Food Circle Coordinator",
+        "phone": "+919800000402",
+        "name": "Bengaluru Food Circle",
+        "address": "Indiranagar, Bengaluru",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "location": {
+          "lat": 12.9719,
+          "lng": 77.6412
+        },
+        "approve": true,
+        "beneficiaries": 160,
+        "capacity": 250,
+        "radiusKm": 15,
+        "acceptsNonVeg": false
+      },
+      "donation": {
+        "foodName": "Bisi bele bath",
+        "dietaryType": "VEG",
+        "quantity": 75
+      }
+    },
+    {
+      "city": "Hyderabad",
+      "state": "Telangana",
+      "donor": {
+        "key": "hyderabad-donor",
+        "email": "hyderabad.donor@demo.foodbridge.local",
+        "fullName": "Deccan Feast Hall Manager",
+        "phone": "+919800000303",
+        "name": "Deccan Feast Hall",
+        "businessType": "RESTAURANT",
+        "address": "Banjara Hills, Hyderabad",
+        "city": "Hyderabad",
+        "state": "Telangana",
+        "location": {
+          "lat": 17.4126,
+          "lng": 78.4482
+        },
+        "approve": true,
+        "baseMeals": 195
+      },
+      "ngo": {
+        "key": "hyderabad-ngo",
+        "email": "hyderabad.ngo@demo.foodbridge.local",
+        "fullName": "Hyderabad Hunger Relief Coordinator",
+        "phone": "+919800000403",
+        "name": "Hyderabad Hunger Relief",
+        "address": "Ameerpet, Hyderabad",
+        "city": "Hyderabad",
+        "state": "Telangana",
+        "location": {
+          "lat": 17.4375,
+          "lng": 78.4483
+        },
+        "approve": true,
+        "beneficiaries": 180,
+        "capacity": 250,
+        "radiusKm": 15,
+        "acceptsNonVeg": true
+      },
+      "donation": {
+        "foodName": "Chicken biryani",
+        "dietaryType": "NON_VEG",
+        "quantity": 60
+      }
+    },
+    {
+      "city": "Chennai",
+      "state": "Tamil Nadu",
+      "donor": {
+        "key": "chennai-donor",
+        "email": "chennai.donor@demo.foodbridge.local",
+        "fullName": "Marina Meals Manager",
+        "phone": "+919800000304",
+        "name": "Marina Meals",
+        "businessType": "RESTAURANT",
+        "address": "T. Nagar, Chennai",
+        "city": "Chennai",
+        "state": "Tamil Nadu",
+        "location": {
+          "lat": 13.0418,
+          "lng": 80.2341
+        },
+        "approve": true,
+        "baseMeals": 210
+      },
+      "ngo": {
+        "key": "chennai-ngo",
+        "email": "chennai.ngo@demo.foodbridge.local",
+        "fullName": "Chennai Community Kitchen Coordinator",
+        "phone": "+919800000404",
+        "name": "Chennai Community Kitchen",
+        "address": "Adyar, Chennai",
+        "city": "Chennai",
+        "state": "Tamil Nadu",
+        "location": {
+          "lat": 13.0067,
+          "lng": 80.257
+        },
+        "approve": true,
+        "beneficiaries": 200,
+        "capacity": 250,
+        "radiusKm": 15,
+        "acceptsNonVeg": false
+      },
+      "donation": {
+        "foodName": "Sambar rice",
+        "dietaryType": "VEG",
+        "quantity": 85
+      }
+    },
+    {
+      "city": "Kolkata",
+      "state": "West Bengal",
+      "donor": {
+        "key": "kolkata-donor",
+        "email": "kolkata.donor@demo.foodbridge.local",
+        "fullName": "Hooghly Kitchen Manager",
+        "phone": "+919800000305",
+        "name": "Hooghly Kitchen",
+        "businessType": "RESTAURANT",
+        "address": "Park Street, Kolkata",
+        "city": "Kolkata",
+        "state": "West Bengal",
+        "location": {
+          "lat": 22.5535,
+          "lng": 88.3522
+        },
+        "approve": true,
+        "baseMeals": 225
+      },
+      "ngo": {
+        "key": "kolkata-ngo",
+        "email": "kolkata.ngo@demo.foodbridge.local",
+        "fullName": "Kolkata Roti Seva Coordinator",
+        "phone": "+919800000405",
+        "name": "Kolkata Roti Seva",
+        "address": "Salt Lake, Kolkata",
+        "city": "Kolkata",
+        "state": "West Bengal",
+        "location": {
+          "lat": 22.5868,
+          "lng": 88.4171
+        },
+        "approve": true,
+        "beneficiaries": 220,
+        "capacity": 250,
+        "radiusKm": 15,
+        "acceptsNonVeg": false
+      },
+      "donation": {
+        "foodName": "Veg khichuri",
+        "dietaryType": "VEG",
+        "quantity": 70
+      }
+    },
+    {
+      "city": "Ahmedabad",
+      "state": "Gujarat",
+      "donor": {
+        "key": "ahmedabad-donor",
+        "email": "ahmedabad.donor@demo.foodbridge.local",
+        "fullName": "Sabarmati Thali House Manager",
+        "phone": "+919800000306",
+        "name": "Sabarmati Thali House",
+        "businessType": "RESTAURANT",
+        "address": "Navrangpura, Ahmedabad",
+        "city": "Ahmedabad",
+        "state": "Gujarat",
+        "location": {
+          "lat": 23.0365,
+          "lng": 72.5611
+        },
+        "approve": true,
+        "baseMeals": 240
+      },
+      "ngo": {
+        "key": "ahmedabad-ngo",
+        "email": "ahmedabad.ngo@demo.foodbridge.local",
+        "fullName": "Ahmedabad Anna Seva Coordinator",
+        "phone": "+919800000406",
+        "name": "Ahmedabad Anna Seva",
+        "address": "Maninagar, Ahmedabad",
+        "city": "Ahmedabad",
+        "state": "Gujarat",
+        "location": {
+          "lat": 22.9962,
+          "lng": 72.6036
+        },
+        "approve": true,
+        "beneficiaries": 240,
+        "capacity": 250,
+        "radiusKm": 15,
+        "acceptsNonVeg": false
+      },
+      "donation": {
+        "foodName": "Gujarati thali",
+        "dietaryType": "VEG",
+        "quantity": 65
+      }
+    },
+    {
+      "city": "Jaipur",
+      "state": "Rajasthan",
+      "donor": {
+        "key": "jaipur-donor",
+        "email": "jaipur.donor@demo.foodbridge.local",
+        "fullName": "Pink City Caterers Manager",
+        "phone": "+919800000307",
+        "name": "Pink City Caterers",
+        "businessType": "RESTAURANT",
+        "address": "C-Scheme, Jaipur",
+        "city": "Jaipur",
+        "state": "Rajasthan",
+        "location": {
+          "lat": 26.9124,
+          "lng": 75.7873
+        },
+        "approve": true,
+        "baseMeals": 255
+      },
+      "ngo": {
+        "key": "jaipur-ngo",
+        "email": "jaipur.ngo@demo.foodbridge.local",
+        "fullName": "Jaipur Bhojan Trust Coordinator",
+        "phone": "+919800000407",
+        "name": "Jaipur Bhojan Trust",
+        "address": "Malviya Nagar, Jaipur",
+        "city": "Jaipur",
+        "state": "Rajasthan",
+        "location": {
+          "lat": 26.8549,
+          "lng": 75.8243
+        },
+        "approve": true,
+        "beneficiaries": 260,
+        "capacity": 250,
+        "radiusKm": 15,
+        "acceptsNonVeg": false
+      },
+      "donation": {
+        "foodName": "Dal baati",
+        "dietaryType": "VEG",
+        "quantity": 55
+      }
+    },
+    {
+      "city": "Lucknow",
+      "state": "Uttar Pradesh",
+      "donor": {
+        "key": "lucknow-donor",
+        "email": "lucknow.donor@demo.foodbridge.local",
+        "fullName": "Awadh Rasoi Manager",
+        "phone": "+919800000308",
+        "name": "Awadh Rasoi",
+        "businessType": "RESTAURANT",
+        "address": "Hazratganj, Lucknow",
+        "city": "Lucknow",
+        "state": "Uttar Pradesh",
+        "location": {
+          "lat": 26.8467,
+          "lng": 80.9462
+        },
+        "approve": true,
+        "baseMeals": 270
+      },
+      "ngo": {
+        "key": "lucknow-ngo",
+        "email": "lucknow.ngo@demo.foodbridge.local",
+        "fullName": "Lucknow Langar Collective Coordinator",
+        "phone": "+919800000408",
+        "name": "Lucknow Langar Collective",
+        "address": "Gomti Nagar, Lucknow",
+        "city": "Lucknow",
+        "state": "Uttar Pradesh",
+        "location": {
+          "lat": 26.85,
+          "lng": 80.9999
+        },
+        "approve": true,
+        "beneficiaries": 280,
+        "capacity": 250,
+        "radiusKm": 15,
+        "acceptsNonVeg": false
+      },
+      "donation": {
+        "foodName": "Veg tehri",
+        "dietaryType": "VEG",
+        "quantity": 80
+      }
+    }
+  ]
+}

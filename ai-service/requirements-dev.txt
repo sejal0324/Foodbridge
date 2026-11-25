@@ -1,0 +1,5 @@
+# FoodBridge AI service: development and test dependencies (exact pins).
+# Install: uv pip install --python .venv/bin/python -r requirements.txt -r requirements-dev.txt
+pytest==9.2.0
+ruff==0.17.3
+respx==0.23.1

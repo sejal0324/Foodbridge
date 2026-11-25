@@ -1,113 +1,108 @@
 # FoodBridge AI: Implementation Progress
 
-Statuses: `NOT STARTED` · `IN PROGRESS` · `IMPLEMENTED` · `TESTED` · `BLOCKED`
+Statuses: `NOT STARTED` · `IN PROGRESS` · `IMPLEMENTED` · `TESTED` · `BLOCKED`.
+`TESTED` means automated tests exist and pass, with the evidence listed in [TESTING_REPORT.md](TESTING_REPORT.md).
+**External-credential integrations are marked separately:** they are implemented and tested against mocked HTTP, but not
+against live provider accounts.
 
-A feature is marked `TESTED` only when automated tests exist and pass, with the
-evidence recorded here. A page that renders is not evidence.
+Working tree: branch `feature/foodbridge-ai-development` (from `main` @ `6a2fd23`). Phase 0 was committed (3 commits);
+everything after Phase 0 is **uncommitted local work**, per the owner's instruction (no commits or pushes).
 
-Branch: `feature/foodbridge-ai-development` (from `main` @ `6a2fd23`)
-
----
-
-## Roadmap overview
+## Phase overview
 
 | Phase | Scope | Status |
 |---|---|---|
-| 0 | Project initialisation, architecture, ER diagram, database design | IMPLEMENTED |
-| 1 | Database and backend foundation (migrations, Express, config, health, errors, logging, validation, test framework) | NOT STARTED |
-| 2 | Authentication and user management (registration, login, JWT/refresh, RBAC, profiles, verification) | NOT STARTED |
-| 3 | Core donation and assistance workflows (reservations, partial fulfilment, notifications, history) | NOT STARTED |
-| 4 | Frontend core (design system, landing, auth, dashboards, forms, marketplace) | NOT STARTED |
-| 5 | AI foundation (FastAPI, dataset, surplus prediction, evaluation, matching, allocation, Node integration) | NOT STARTED |
-| 6 | LLM assistant (provider adapter, authorised tools, confirmations, fallback) | NOT STARTED |
-| 7 | Pickup verification (representatives, QR, OTP, two-way handover, disputes) | NOT STARTED |
-| 8 | LiveTrack (sessions, GPS, Socket.IO, maps, ETA, retention) | NOT STARTED |
-| 9 | Rewards and billing (ledger, tiers, certificates, fees, invoices, Razorpay) | NOT STARTED |
-| 10 | Logistics optimisation (OR-Tools VRPTW, collection plans) | NOT STARTED |
-| 11 | Analytics and AI insights | NOT STARTED |
-| 12 | Final QA, security review, deployment | NOT STARTED |
+| 0 | Initialisation, architecture, ER diagram, database design | TESTED (environment checks) |
+| 1 | Database and backend foundation | TESTED |
+| 2 | Authentication and user management | TESTED |
+| 3 | Donation and assistance workflows, partial fulfilment, notifications | TESTED |
+| 4 | Frontend core (design system, landing, auth, dashboards) | TESTED (unit and browser E2E) |
+| 5 | AI foundation (forecasting, matching, allocation, backend integration) | TESTED |
+| 6 | LLM assistant | TESTED (provider calls mocked; no live LLM key) |
+| 7 | Pickup verification (QR pass, photo-ID check, handover, disputes) | TESTED |
+| 8 | LiveTrack | TESTED |
+| 9 | Rewards and billing | TESTED (Razorpay mocked) |
+| 10 | Logistics optimisation (VRPTW) | TESTED |
+| 11 | Analytics and insights | TESTED |
+| 12 | QA, security review, Docker, documentation | TESTED |
 
----
+## Feature detail
 
-## Phase 0: Project initialisation
+| Feature | Status | Key files | Tests | Limitations |
+|---|---|---|---|---|
+| Migrations (53 tables after 0012, rollback) | TESTED | `database/migrations/0001–0012` | Every backend run: all down, then all up | Forward-only in production |
+| Config validation and production guards | TESTED | `backend/src/config/env.ts` | `config.test.ts` | |
+| Health, errors, logging, security headers, CORS | TESTED | `app.ts`, `middleware/*` | `health.test.ts` | |
+| Registration, login, lockout, JWT + rotating refresh, logout, reset, invites | TESTED | `services/auth.service.ts` | `auth.test.ts`, e2e `security.spec.ts` | |
+| RBAC, ownership checks, admin provisioning (CLI only) | TESTED | `middleware/auth.ts`, `routes/index.ts`, `cli/create-admin.ts` | `auth.test.ts` and others | |
+| Profiles, availability, categories, documents (signature-checked) | TESTED | `profile.service.ts`, `verification.service.ts` | `auth.test.ts`, frontend tests | Local disk storage |
+| Admin verification and user suspension | TESTED | `verification.service.ts` | `auth.test.ts` | |
+| Donations (create, edit with versioning, cancel, drafts, review flags) | TESTED | `donation.service.ts` | `donations.test.ts`, e2e `donor.spec.ts` | |
+| NGO requests, approval, atomic reservation, batch approval | TESTED | `donation.service.ts`, `allocation.service.ts` | `donations.test.ts` (5-way race), integration scenario D | |
+| Assistance requests, offers, partial fulfilment, confirm/cancel | TESTED | `assistance.service.ts` | `assistance.test.ts` (concurrent acceptance), integration scenario B | |
+| Expiry and retention jobs | TESTED | `expiry.service.ts`, `maintenance.service.ts`, `tracking.service.ts` | `donations.test.ts`, `assistance.test.ts`, `integrations.test.ts`, `tracking.test.ts` | |
+| Notifications (in-app, socket, email retry, preferences, dedupe) | TESTED | `notification.service.ts`, `jobs/worker.ts` | `integrations.test.ts` (retry, DEAD, admin retry) | Web Push not implemented |
+| Matching (hard filters + AI weighted ranking + labelled fallback) | TESTED | `matching.service.ts`, `ai-service/app/services/matching_*` | backend and AI tests, integration scenarios A and B | Weights are initial, not validated |
+| Allocation optimiser (OR-Tools) | TESTED | `ai-service/.../allocation_service.py`, `matching.service.ts` | AI tests, `donations.test.ts`, `assistance.test.ts` | |
+| Surplus forecasting | TESTED | `ai-service/training/*`, `prediction.service.ts` | AI tests, `intelligence.test.ts`, integration | **Synthetic training data** |
+| LLM assistant (tools, confirmation, fallback) | TESTED | `assistant.service.ts`, `ai-service/.../llm_*` | `intelligence.test.ts`, AI tests (mocked providers) | No live LLM key used |
+| Pickup verification (QR pass, photo-ID check, handover, disputes, delivery) | TESTED | `pickup.service.ts` | `pickup.test.ts`, integration A and C, e2e `donor.spec.ts`, `ngo.spec.ts`, `admin.spec.ts` | A one-sided handover has no timeout yet |
+| Representatives (invites, photos, revocation) | TESTED | `representative.service.ts` | `pickup.test.ts` | |
+| LiveTrack (consent, viewers, staleness, retention) | TESTED | `tracking.service.ts`, `sockets/gateway.ts` | `tracking.test.ts` | Foreground browser only; Google ETA untested live |
+| Rewards (10/15 per meal with the 500-meal split, 10 per order, ledger, tiers, certificates) | TESTED | `domain/rewards.ts`, `reward.service.ts` | `domain.test.ts`, `pickup.test.ts` | |
+| NGO billing (₹5 per unit, tax, invoices, PDF, manual payments, Razorpay) | TESTED | `domain/fees.ts`, `billing.service.ts`, `integrations/razorpay.ts` | `domain.test.ts`, `billing.test.ts` | Razorpay mocked; GST needs professional review |
+| Route planning (VRPTW) | TESTED | `planning.service.ts`, `ai-service/.../route_service.py` | `intelligence.test.ts`, AI tests | Estimated travel times without a Google key |
+| Analytics, insights, public impact | TESTED | `analytics.service.ts`, `ai-service/.../insights_service.py` | `intelligence.test.ts`, e2e `public.spec.ts` | |
+| India-wide coverage (geocoding, states, location validation) | TESTED | `integrations/geocoding.ts`, `utils/india.ts`, frontend `LocationPicker` | `geo.test.ts`, frontend tests, e2e | Nominatim fair-use limits |
+| Frontend: landing, auth, donor area | TESTED | `frontend/src/features/{public,auth,donor,donations,assistance,pickups,…}` | frontend unit tests, e2e | |
+| Frontend: NGO area | TESTED | `frontend/src/features/ngo` | frontend unit tests, e2e `ngo.spec.ts` | |
+| Frontend: admin area | TESTED | `frontend/src/features/admin` | frontend unit tests, e2e `admin.spec.ts` | |
+| Docker images and stack | TESTED | `deployment/docker/*`, `docker-compose.yml` | Images build; containers healthy as non-root | Production hosting not provisioned |
+| Root orchestration | TESTED | `package.json`, `deployment/scripts/*` | Used for every run in TESTING_REPORT | |
 
-**Status:** IMPLEMENTED (design and environment; no application code yet)
+## Latest verification (2026-11-04, after the OTP step was removed)
 
-### Done
+Full details are in [TESTING_REPORT.md](TESTING_REPORT.md). The AI service and Docker stack rows are from
+2026-11-03 (the AI service did not change).
 
-| Item | Result |
+| Suite | Result |
 |---|---|
-| Repository verified | `main` was clean and up to date with `origin/main`. One commit, `6a2fd23`, preserved unchanged |
-| Git identity verified | `Sejal <sejaldharamthok24@gmail.com>` (global config), matching the initial commit's author and committer |
-| Remote verified | `origin` → `https://github.com/sejal0324/Foodbridge.git` (only `main` on the remote) |
-| Feature branch | `feature/foodbridge-ai-development` created locally (not pushed) |
-| Tooling verified | Node 24.19, npm 11.17, Docker 29.1 with Compose 2.40, Python 3.12.16 (via uv 0.13.7), psql 14 client |
-| Folder structure | Spec §7 structure created. `.gitkeep` keeps empty directories in Git |
-| Root config | `.env.example`, `.editorconfig`, `.gitattributes`, `.nvmrc` (24), `.gitignore` extended (original entries kept) |
-| Database environment | `docker-compose.yml` (root) includes `database/docker-compose.yml`: PostgreSQL 18.6 + PostGIS 3.6.4 on `127.0.0.1:5433`, healthcheck, named volume, separate `foodbridge_test` database |
-| Backend TypeScript setup | `backend/package.json`, `tsconfig.json` (strict, NodeNext ESM), `tsconfig.build.json`; TypeScript 6.0.3 and @types/node 24 pinned with a lockfile |
-| Python environment | `ai-service/.python-version` (3.12); `ai-service/.venv` created with uv (gitignored) |
-| Architecture | [SYSTEM_ARCHITECTURE.md](SYSTEM_ARCHITECTURE.md): components, authority boundaries, flows, auth design, degradation matrix, decision log |
-| Database design | [DATABASE_DESIGN.md](DATABASE_DESIGN.md): 53 tables, constraints, concurrency strategy, state machines, retention, migrations |
-| ER diagram | [ER_DIAGRAM.md](ER_DIAGRAM.md): an overview plus six domain diagrams |
+| Backend (Vitest + Supertest, real PostgreSQL) | 116 / 116 |
+| AI service (pytest) | 194 / 194 (2026-11-03) |
+| Frontend (Vitest + Testing Library) | 177 / 177 |
+| Integration (real backend + AI service) | 10 / 10 |
+| Browser E2E (Playwright + Chrome: donor, NGO, admin, public, security, mobile) | 15 / 15 |
+| Lint, typecheck | Clean |
+| Docker stack | 4 containers healthy, non-root app containers (2026-11-03) |
 
-### Verification performed
+**Fixed in this round, each with tests:**
+- **Five admin-reported backend gaps:** a partial invoice run failing, "collected" ignoring partial payments, the
+  dispute link, the dispute unit, and admin-cancellation wording.
+- **Review findings:**
+  - double dispute resolution;
+  - a confirmed handover voidable by the other side;
+  - revoked representatives;
+  - unapproved NGOs publishing through the assistant;
+  - online overpayment;
+  - incomplete unwinding when a disputed collection is cancelled.
+- **Smaller fixes:**
+  - invoice and certificate periods now use IST days;
+  - the assistance-cancel race;
+  - the donation-edit status rollup.
 
-These are checks of the environment, not application tests. Outputs were observed directly.
+**Known and documented, not fixed:** a rare lock-order deadlock surfaces as a retryable 409 (SECURITY.md §8).
 
-- `docker compose config --quiet` succeeds. `docker compose up -d db` reaches `healthy`.
-- From the host via `DATABASE_URL`: `PostgreSQL 18.6`, `SHOW timezone` = `UTC`. Databases
-  `foodbridge` and `foodbridge_test` exist. Extensions `postgis 3.6.4`, `citext 1.8` and
-  `pgcrypto 1.4` are available. `gen_random_uuid()` works. The port is bound to `127.0.0.1` only.
-- Design constraints were checked on PostgreSQL 18, in transactions that were rolled back:
-  - The `link_path` CHECK accepts `/donations/1` and `/`, and rejects `//evil.com`, `/\evil.com` and `https://evil.com`.
-  - The handover CHECK rejects `CONFIRMED` with a NULL or mismatched NGO quantity. This caught a NULL-passes-CHECK bug in the first draft.
-  - `UNIQUE NULLS NOT DISTINCT` rejects a duplicate candidate row.
-  - The `reserved_quantity <= quantity` CHECK rejects over-reservation.
-  - A conditional reservation `UPDATE` affects 0 rows when the quantity is insufficient and 1 row when it is sufficient.
-- The backend tsconfig typechecks a probe module (ESM imports, `node:` built-ins,
-  `noUncheckedIndexedAccess`) with TypeScript 6.0.3: exit code 0. The probe lived in the
-  scratchpad and was not committed.
-- uv creates the Python 3.12.16 venv. A dry-run resolve finds fastapi 0.162, scikit-learn 1.9.1,
-  ortools 9.15, pandas 3.1 and numpy 2.5 for Python 3.12. Nothing was installed yet.
-- All 12 Mermaid diagrams (in the ER and architecture docs) render with mermaid-cli 12.2 without errors.
+## Decisions confirmed by the product owner (2026-11-03)
 
-### Database changes
+- Units are MEALS, PACKETS and BOXES only, as whole numbers.
+- Rewards: 10 points per verified meal, 15 after 500 lifetime meals (split at the boundary), 10 points per verified packet or box order.
+- Fee: ₹5 per verified meal, packet or box. Configurable GST, kept separate.
+- Coverage is all of India.
+- No git commits or pushes after Phase 0; all work stays local.
 
-None. Phase 0 is design only. The first migrations arrive in Phase 1.
+## Decisions confirmed by the product owner (2026-11-04)
 
-### APIs created
-
-None.
-
-### Known limitations and notes
-
-- The frontend toolchain (Vite, React, Tailwind) is scaffolded in Phase 4, so the empty
-  structure is only placeholders until then.
-- `docker-compose.yml` runs only the database for now. Backend, AI service and frontend
-  services are added as each gets a Dockerfile.
-- Port 4000 is used by another project on the development machine, so the backend uses 5001.
-  Port 5432 is used by a local PostgreSQL 14, so Docker PostgreSQL uses 5433.
-- TypeScript is pinned to 6.0.x (not 7.x) because typescript-eslint currently supports TypeScript below 6.1.
-- `database/init/.gitkeep` is a leftover placeholder next to the init script. It is harmless.
-
-### Open product questions
-
-See [SYSTEM_ARCHITECTURE.md §15](SYSTEM_ARCHITECTURE.md#15-open-questions-for-the-product-owner):
-the reward formula outside the brackets, the fee amount and GST, the SMS provider, and the unit set.
-
----
-
-## Phase 1: Database and backend foundation
-
-**Status:** NOT STARTED
-
-Planned:
-
-- node-pg-migrate setup; first migrations (extensions, `set_updated_at`, `forbid_mutation`,
-  `platform_settings`, `audit_logs`, `idempotency_records`, `jobs`).
-- Express app with request IDs, helmet, CORS, body limits, structured logging (pino) with redaction.
-- Config validation (Zod) with production guards.
-- `GET /api/health` (liveness) and readiness (database check).
-- Central error handling with a consistent error envelope.
-- Vitest + Supertest against the `foodbridge_test` database.
+- OTP step removed by the product owner on 2026-11-04; verification is QR pass + photo-ID check + two-way
+  confirmation. This withdraws the earlier decision to send an SMS OTP through MSG91: SMS is no longer used anywhere.
+  Forward migration `0012_remove_pickup_otp.sql` drops `otp_verifications` and `pickup_assignments.otp_verified_at`
+  and deletes the `otp.policy` setting (its Down section restores them). See [PICKUP_VERIFICATION.md](PICKUP_VERIFICATION.md).

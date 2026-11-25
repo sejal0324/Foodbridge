@@ -1,11 +1,32 @@
 # FoodBridge AI: Database Design
 
-> **Status:** Phase 0 design. No migrations exist yet. Each table is created by a
-> migration in the phase listed in §3, and this document is updated whenever a
-> migration changes the design.
+> **Status:** Implemented. Migrations `0001`–`0012` in [`database/migrations/`](../database/migrations/)
+> are authoritative; a generated schema snapshot is in [`database/schema/schema.sql`](../database/schema/schema.sql).
+> §0 lists every change made during implementation relative to the Phase 0 design below.
 > Diagrams: [ER_DIAGRAM.md](ER_DIAGRAM.md) · Architecture: [SYSTEM_ARCHITECTURE.md](SYSTEM_ARCHITECTURE.md)
 
 ---
+
+## 0. Changes made during implementation
+
+| Area | Change | Reason |
+|---|---|---|
+| Units and quantities | Units are `MEALS`, `PACKETS` and `BOXES` only; all quantities are `integer` | Confirmed business rules: fees and points are per meal, packet or box |
+| Rewards | `reward_rules(unit, basis PER_UNIT\|PER_ORDER, points, lifetime_threshold, effective_from/to, is_active)` with progressive lifetime brackets. Seed: MEALS 10 from 0, MEALS 15 after 500, PACKETS 10 per order, BOXES 10 per order. `reward_balances` adds `lifetime_meals` and `lifetime_orders`; `reward_transactions` adds `unit`, `quantity` and `calculation` | Confirmed reward rules (see REWARD_SYSTEM.md) |
+| Fees | `service_fee_rules(unit, amount_per_unit)`, seeded at ₹5 for each unit. `ngo_billing` stores `unit_amount`, `base_amount`, `tax_name`, `tax_rate_percent`, `tax_amount` and `total_amount`, with CHECKs `base = unit × qty` and `total = base + tax`, plus a unique `handover_record_id`. Tax lives in `platform_settings['billing.tax']` (disabled by default) | ₹5 per unit, with tax kept separate and configurable |
+| `account_tokens` ➕ | Single-use invitation and password-reset tokens (hashed) | Representative invitations and password reset (the 54th table) |
+| `donations` | Added `expired_quantity` | Records unreserved quantity that expired at the deadline |
+| `donation_allocations` | Added `cancelled_by_party` (`DONOR`, `NGO`, `ADMIN`, `SYSTEM`) | Reliability scoring must not blame an NGO for a donor's cancellation |
+| `match_recommendations` | Added `ranking_status` (`RANKED`, `RANKING_UNAVAILABLE`, `NOT_RANKED`) | Honest labelling of the deterministic fallback |
+| `surplus_predictions` | Added `status` (`OK`, `INSUFFICIENT_HISTORY`), `basis` and `input_summary` | A forecast is never guessed |
+| `model_versions` | `first_seen_at` instead of `trained_at` being required | Versions are recorded from the AI service on first use |
+| Pickup | `pickup_verifications` failure reasons extended (`PICKUP_NOT_ACTIVE`, `QR_NOT_VERIFIED`); `pickup_assignments` status adds `DISPUTED`; `disputes.handover_record_id` | Precise audit and dispute linkage |
+| Pickup verification (migration `0012_remove_pickup_otp.sql`) | Drops `otp_verifications` (with its indexes and FKs), `pickup_assignments.otp_verified_at` and the `otp.policy` setting; `VERIFIED`, `HANDED_OVER`, `IN_TRANSIT` and `DELIVERED` now require `qr_verified_at` and `identity_confirmed_at`. The Down section restores the 0007/0011 definitions | The product owner removed the OTP step on 2026-11-04: verification is QR pass + photo-ID check + two-way confirmation |
+| Tracking | `tracking_sessions.points_purged_at`; `tracking_events.pickup_assignment_id` (so a permission denial can be recorded before a session exists); event types `POSITION_UNAVAILABLE`, `STALE` | Retention bookkeeping; consent edge cases |
+| Planning | `collection_plans.start_time`, `explanation`, `solver_status` (adds `PARTIAL`, `UNAVAILABLE`); `collection_stops.status` (adds `DROPPED`) and `drop_reason` | Infeasible stops are explained, never hidden |
+| Invoices and payments | Sequences `invoice_number_seq` and `impact_certificate_number_seq`; unique invoice per NGO and period; `payments.reference_note`; MANUAL payments require `recorded_by` | Idempotent invoicing, audited offline payments |
+| Notifications | `notification_preferences.push_enabled` removed (browser notifications are shown client-side only while the app is open) | Web Push is future work |
+| Settings | Added `platform.demo_data` | Analytics label demo seed data |
 
 ## 1. Platform
 
@@ -25,7 +46,7 @@
 | Primary keys | `id uuid DEFAULT gen_random_uuid()` for business entities. Append-only, high-volume logs use `id bigint GENERATED ALWAYS AS IDENTITY` |
 | Foreign keys | Always declared. Default `ON DELETE RESTRICT`. `CASCADE` only for pure child detail rows (sessions, join tables, location points, plan stops, delivery logs) |
 | Status columns | `text` plus a named `CHECK (status IN (…))`. Allowed *transitions* are enforced by backend state machines (§7), and every transition writes history/audit rows in the same transaction |
-| Quantities | `numeric(10,2)`, `CHECK (> 0)` (allows fractional kilograms) |
+| Quantities | `integer`, `CHECK (> 0)`. Units are countable (meals, packets, boxes), so quantities are whole numbers |
 | Money | `numeric(12,2)` plus `currency char(3) DEFAULT 'INR'` |
 | Points | `integer` |
 | Location | `geography(Point, 4326)` with a GiST index. The API exchanges `{ lat, lng }` |
@@ -33,7 +54,7 @@
 | Soft deletion | `deleted_at timestamptz` on users, donors, ngos, ngo_representatives, donations, food_assistance_requests, ai_conversations. Uniqueness uses partial indexes `WHERE deleted_at IS NULL` |
 | Immutability | Ledgers and logs have a `BEFORE UPDATE OR DELETE` trigger, `forbid_mutation()`, that raises an error |
 | Optimistic locking | `version integer NOT NULL DEFAULT 1` on user-editable aggregates (donations, assistance requests) |
-| Secrets | Never stored raw. Passwords use Argon2id; refresh tokens and QR tokens are stored as SHA-256 hashes; OTPs as HMAC-SHA-256 with a server pepper. No payment card data is ever stored |
+| Secrets | Never stored raw. Passwords use Argon2id; refresh tokens and QR tokens are stored as SHA-256 hashes. No payment card data is ever stored |
 | Naming | snake_case, plural table names, `<entity>_id` for foreign keys, `idx_<table>__<cols>`, `uq_<table>__<cols>` |
 
 ### 2.1 Shared value sets
@@ -43,7 +64,7 @@
 | `role` | `DONOR`, `NGO`, `ADMIN` |
 | `account_status` | `INVITED`, `ACTIVE`, `SUSPENDED`, `DEACTIVATED` |
 | `verification_status` | `PENDING`, `APPROVED`, `REJECTED`, `SUSPENDED` |
-| `quantity_unit` | `MEALS`, `PORTIONS`, `KG`, `LITRES`, `PACKETS`, `ITEMS` |
+| `quantity_unit` | `MEALS`, `PACKETS`, `BOXES` (confirmed business decision, 2026-11-03) |
 | `dietary_type` (food) | `VEG`, `NON_VEG` |
 | `dietary_requirement` (NGO request) | `VEG_ONLY`, `ANY` |
 | `storage_type` | `ROOM_TEMPERATURE`, `REFRIGERATED`, `FROZEN`, `HOT_HELD` |
@@ -67,7 +88,7 @@ were **added**, marked ➕ (justification in §5).
 | 3 | Notifications | `notifications`, `notification_preferences`, `notification_logs` |
 | 5 | AI | `restaurant_daily_metrics`, `model_versions`, `surplus_predictions`, `match_recommendations` |
 | 6 | Assistant | `ai_conversations` ➕, `ai_interactions` |
-| 7 | Pickup and handover | `pickup_assignments`, `pickup_tokens`, `otp_verifications`, `pickup_verifications`, `handover_records`, `delivery_confirmations`, `disputes` ➕ |
+| 7 | Pickup and handover | `pickup_assignments`, `pickup_tokens`, `pickup_verifications`, `handover_records`, `delivery_confirmations`, `disputes` ➕ |
 | 8 | Tracking | `tracking_sessions`, `location_updates`, `tracking_events` |
 | 9 | Rewards | `reward_rules`, `reward_tiers`, `reward_balances`, `reward_transactions`, `impact_certificates` ➕ |
 | 9 | Billing | `service_fee_rules`, `ngo_billing`, `invoices`, `payments` |
@@ -87,7 +108,7 @@ null. `created_at` / `updated_at` are omitted where they follow the convention.
 
 | Column | Type | Notes |
 |---|---|---|
-| key | text | PK, e.g. `matching.weights`, `matching.max_radius_km`, `pickup.qr_ttl_minutes`, `otp.max_attempts`, `notifications.max_per_hour` |
+| key | text | PK, e.g. `matching.weights`, `matching.max_radius_km`, `pickup.qr_ttl_minutes`, `tracking.stale_after_seconds`, `notifications.max_per_hour` |
 | value | jsonb | NN, validated by a backend schema per key |
 | description | text | |
 | updated_by | uuid | FK users (added in Phase 2) |
@@ -529,7 +550,7 @@ Retention: `AI_INTERACTION_RETENTION_DAYS`.
 | status | text | `ASSIGNED`, `EN_ROUTE`, `VERIFIED`, `HANDED_OVER`, `IN_TRANSIT`, `DELIVERED`, `CANCELLED`, `FAILED` |
 | scheduled_pickup_at | timestamptz | |
 | destination_location / destination_address | geography / text | |
-| qr_verified_at / otp_verified_at / identity_confirmed_at | timestamptz | `VERIFIED` requires all three |
+| qr_verified_at / identity_confirmed_at | timestamptz | `VERIFIED`, `HANDED_OVER`, `IN_TRANSIT` and `DELIVERED` require both |
 | handed_over_at, delivered_at, cancelled_at, cancel_reason | | |
 
 `uq_pickup_assignments__active`: `UNIQUE (allocation_id) WHERE status NOT IN ('CANCELLED','FAILED')`.
@@ -549,29 +570,13 @@ Reassignment cancels the old assignment and creates a new one.
 
 `UNIQUE (pickup_assignment_id) WHERE consumed_at IS NULL AND revoked_at IS NULL`: one live pass at a time.
 
-**`otp_verifications`**
-
-| Column | Type | Notes |
-|---|---|---|
-| id | uuid | PK |
-| pickup_assignment_id | uuid | NN, FK |
-| recipient_user_id | uuid | NN, FK users (the representative) |
-| channel | text | `SMS`, `EMAIL`, `DEV_LOG` (rejected by the backend when `NODE_ENV=production`) |
-| otp_hash | text | NN, HMAC-SHA-256(pepper, assignment id ‖ code) |
-| expires_at | timestamptz | NN |
-| attempt_count / max_attempts | smallint | `CHECK (attempt_count <= max_attempts)` |
-| delivery_status | text | `PENDING`, `SENT`, `FAILED` |
-| verified_at, invalidated_at | timestamptz | |
-
-`UNIQUE (pickup_assignment_id) WHERE verified_at IS NULL AND invalidated_at IS NULL`.
-Resend limits are counted over a time window per assignment.
-
-**`pickup_verifications`**: append-only log of every QR, OTP and identity-check attempt.
-`id bigint`, `pickup_assignment_id` (nullable when the token is unknown), `method` (`QR`, `OTP`,
+**`pickup_verifications`**: append-only log of every QR pass and identity-check attempt.
+`id bigint`, `pickup_assignment_id` (nullable when the token is unknown), `method` (`QR`,
 `IDENTITY_CHECK`), `result` (`SUCCESS`, `FAILURE`), `failure_reason` (`TOKEN_NOT_FOUND`,
 `TOKEN_EXPIRED`, `TOKEN_CONSUMED`, `TOKEN_REVOKED`, `WRONG_DONOR`, `REPRESENTATIVE_INACTIVE`,
-`OTP_INVALID`, `OTP_EXPIRED`, `OTP_ATTEMPTS_EXCEEDED`, `RATE_LIMITED`), `actor_user_id`, `ip`,
-`user_agent`, `created_at`. Raw tokens and codes are never logged.
+`PICKUP_NOT_ACTIVE`, `QR_NOT_VERIFIED`, `RATE_LIMITED`), `actor_user_id`, `ip`,
+`user_agent`, `created_at`. Raw tokens are never logged. The CHECKs still accept the historical `OTP` method and OTP
+failure reasons so rows written before migration 0012 stay valid; new rows are only `QR` or `IDENTITY_CHECK`.
 
 **`handover_records`**: two-way confirmation.
 
@@ -871,7 +876,6 @@ SELECT n.id, ST_Distance(n.location, d.location) AS distance_m
 | Data | Retention | Mechanism |
 |---|---|---|
 | `location_updates` (raw GPS points) | `LOCATION_RETENTION_DAYS` (default 30) after the session ends | Daily job deletes points; the session keeps a summary. `last_location` is cleared after the same period |
-| `otp_verifications` | 30 days | Daily job (rows contain only HMACs) |
 | `pickup_tokens` | 1 year (hash plus timestamps, for audit) | Daily job |
 | `user_sessions` | 30 days after expiry or revocation | Daily job |
 | `ai_interactions` | `AI_INTERACTION_RETENTION_DAYS` (default 90) | Daily job |
@@ -888,6 +892,7 @@ SELECT n.id, ST_Distance(n.location, d.location) AS distance_m
   The test suite migrates `TEST_DATABASE_URL` before running.
 - **One concern per migration**, created in the phase that needs it (§3).
 - **Forward-only in shared environments.** Down migrations exist for local development only.
+  Removals are new forward migrations (for example `0012_remove_pickup_otp.sql`); applied migrations are never edited.
 - **Reference data** that production needs (food categories, reward tiers, initial reward rules,
   initial fee rule, default settings) is inserted by migrations.
 - **Demo data** (`database/seeds/`) is synthetic, labelled `SYNTHETIC` wherever the schema has a

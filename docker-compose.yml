@@ -1,12 +1,76 @@
-# FoodBridge AI: local development stack.
+# FoodBridge AI: local stack.
 #
-#   cp .env.example .env      # fill in generated secrets
-#   docker compose up -d db   # start PostgreSQL + PostGIS
+#   npm run db:up      → PostgreSQL + PostGIS only (for `npm run dev`)
+#   npm run stack:up   → full containerised stack (profile "app"):
+#                        web app on http://localhost:8080 (nginx → backend → AI service → db)
+#   npm run stack:down → stop the full stack
 #
-# Application services (backend, ai-service, frontend) are added here as each
-# one gains a Dockerfile in its implementation phase.
+# Variables are read from the root .env (see .env.example). The containerised
+# stack runs with NODE_ENV=development so local-only conveniences (log email)
+# keep working over plain http://localhost. For a real
+# deployment see docs/DEPLOYMENT_GUIDE.md (production config is enforced there).
 name: foodbridge
 
 include:
   - path: ./database/docker-compose.yml
     env_file: ./.env
+
+services:
+  ai-service:
+    profiles: [app]
+    build:
+      context: ./ai-service
+      dockerfile: ../deployment/docker/ai-service.Dockerfile
+    image: foodbridge-ai:local
+    restart: unless-stopped
+    environment:
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?INTERNAL_SERVICE_TOKEN must be set in .env}
+      LLM_PROVIDER: ${LLM_PROVIDER:-none}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+
+  backend:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: deployment/docker/backend.Dockerfile
+    image: foodbridge-backend:local
+    restart: unless-stopped
+    env_file: ./.env
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://${POSTGRES_USER:-foodbridge}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-foodbridge}
+      AI_SERVICE_URL: http://ai-service:8001
+      APP_BASE_URL: http://localhost:8080
+      CORS_ORIGINS: http://localhost:8080
+      TRUST_PROXY: "true"
+      UPLOAD_DIR: /app/uploads
+      RUN_MIGRATIONS: "true"
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+
+  frontend:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: deployment/docker/frontend.Dockerfile
+      args:
+        VITE_GOOGLE_MAPS_BROWSER_API_KEY: ${VITE_GOOGLE_MAPS_BROWSER_API_KEY:-}
+    image: foodbridge-frontend:local
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  uploads:

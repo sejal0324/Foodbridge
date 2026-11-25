@@ -1,0 +1,534 @@
+{
+  "model_version": "sf-20261103-c261c11a",
+  "training_data_label": "SYNTHETIC",
+  "eda": {
+    "rows": 33458,
+    "restaurants": 40,
+    "date_min": "2025-09-01",
+    "date_max": "2026-10-05",
+    "data_source_labels": [
+      "SYNTHETIC"
+    ],
+    "rows_by_meal_period": {
+      "ALL_DAY": 1577,
+      "BREAKFAST": 4619,
+      "DINNER": 13631,
+      "LUNCH": 13631
+    },
+    "restaurants_by_type": {
+      "BAKERY_CAFE": 4,
+      "FAMILY_DINING": 14,
+      "OFFICE_CANTEEN": 10,
+      "QUICK_SERVICE": 12
+    },
+    "restaurants_by_size": {
+      "LARGE": 11,
+      "MEDIUM": 8,
+      "SMALL": 21
+    },
+    "missing_values": {
+      "prepared_qty": 0,
+      "sold_qty": 70,
+      "surplus_qty": 137
+    },
+    "duplicate_key_rows": 12,
+    "surplus_qty": {
+      "mean": 29.71,
+      "median": 18.0,
+      "p90": 75.0,
+      "max": 432.0,
+      "zero_share": 0.1548
+    },
+    "overall_surplus_ratio": 0.1534,
+    "surplus_ratio_by_type": {
+      "BAKERY_CAFE": 0.1352,
+      "FAMILY_DINING": 0.1413,
+      "OFFICE_CANTEEN": 0.1811,
+      "QUICK_SERVICE": 0.1526
+    },
+    "mean_surplus_by_weekday": {
+      "Mon": 27.41,
+      "Tue": 28.56,
+      "Wed": 28.04,
+      "Thu": 30.02,
+      "Fri": 30.01,
+      "Sat": 30.0,
+      "Sun": 35.41
+    },
+    "mean_surplus_by_month": {
+      "2025-09": 29.58,
+      "2025-10": 30.58,
+      "2025-11": 30.09,
+      "2025-12": 29.29,
+      "2026-01": 30.42,
+      "2026-02": 28.58,
+      "2026-03": 29.06,
+      "2026-04": 29.14,
+      "2026-05": 27.17,
+      "2026-06": 31.87,
+      "2026-07": 29.12,
+      "2026-08": 28.18,
+      "2026-09": 33.35,
+      "2026-10": 28.8
+    },
+    "mean_surplus_holiday_vs_not": {
+      "holiday": 29.9,
+      "non_holiday": 29.7
+    },
+    "mean_surplus_event_vs_not": {
+      "event": 55.15,
+      "no_event": 29.09
+    }
+  },
+  "cleaning": {
+    "rows_in": 33458,
+    "duplicates_dropped": 12,
+    "surplus_imputed_from_prepared_minus_sold": 137,
+    "sold_imputed_from_prepared_minus_surplus": 70,
+    "rows_dropped_missing": 0,
+    "rows_dropped_invalid": 0,
+    "rows_out": 33446
+  },
+  "split": {
+    "method": "chronological by target date, no shuffling",
+    "train": [
+      "2025-09-01",
+      "2026-06-07"
+    ],
+    "validation": [
+      "2026-06-08",
+      "2026-08-06"
+    ],
+    "test": [
+      "2026-08-07",
+      "2026-10-05"
+    ]
+  },
+  "row_counts": {
+    "train": 20909,
+    "validation": 5042,
+    "test": 5020
+  },
+  "metrics": {
+    "selection_metric": "validation_mae",
+    "selected": "linear_regression",
+    "selected_beats_baseline_on_validation": true,
+    "models": {
+      "baseline": {
+        "algorithm": "SameWeekdayTrailingMean",
+        "validation": {
+          "mae": 19.9352,
+          "rmse": 31.6154
+        },
+        "test": {
+          "mae": 20.8749,
+          "rmse": 33.2403
+        }
+      },
+      "linear_regression": {
+        "algorithm": "LinearRegression",
+        "validation": {
+          "mae": 18.0903,
+          "rmse": 28.4332
+        },
+        "test": {
+          "mae": 19.406,
+          "rmse": 30.1086
+        },
+        "serialized_kib": 0.9
+      },
+      "random_forest": {
+        "algorithm": "RandomForestRegressor",
+        "validation": {
+          "mae": 18.0992,
+          "rmse": 28.5488
+        },
+        "test": {
+          "mae": 19.3584,
+          "rmse": 30.1102
+        },
+        "serialized_kib": 2022.4
+      },
+      "hist_gradient_boosting": {
+        "algorithm": "HistGradientBoostingRegressor",
+        "validation": {
+          "mae": 18.7584,
+          "rmse": 29.2237
+        },
+        "test": {
+          "mae": 19.4191,
+          "rmse": 30.0851
+        },
+        "serialized_kib": 570.0
+      }
+    }
+  },
+  "interval": {
+    "lower_quantile": 0.1,
+    "upper_quantile": 0.9,
+    "lower": -0.141175,
+    "upper": 0.178008,
+    "source": "validation residuals of the selected model, normalised by scale",
+    "test_coverage": 0.7452
+  },
+  "residual_analysis_test": {
+    "n": 5020,
+    "bias_actual_minus_predicted": 0.572,
+    "residual_quantiles": {
+      "0.1": -26.717,
+      "0.5": -1.658,
+      "0.9": 29.932
+    },
+    "interval_coverage": 0.7452,
+    "by_weekday": {
+      "0-Mon": {
+        "n": 790,
+        "mae": 18.201,
+        "bias_actual_minus_predicted": 0.511,
+        "mean_actual": 28.872
+      },
+      "1-Tue": {
+        "n": 693,
+        "mae": 17.469,
+        "bias_actual_minus_predicted": 2.161,
+        "mean_actual": 30.468
+      },
+      "2-Wed": {
+        "n": 688,
+        "mae": 17.509,
+        "bias_actual_minus_predicted": -0.857,
+        "mean_actual": 27.724
+      },
+      "3-Thu": {
+        "n": 692,
+        "mae": 18.437,
+        "bias_actual_minus_predicted": 0.109,
+        "mean_actual": 30.21
+      },
+      "4-Fri": {
+        "n": 783,
+        "mae": 21.114,
+        "bias_actual_minus_predicted": 1.55,
+        "mean_actual": 32.605
+      },
+      "5-Sat": {
+        "n": 783,
+        "mae": 20.348,
+        "bias_actual_minus_predicted": 0.917,
+        "mean_actual": 31.656
+      },
+      "6-Sun": {
+        "n": 591,
+        "mae": 23.119,
+        "bias_actual_minus_predicted": -0.758,
+        "mean_actual": 36.159
+      }
+    },
+    "by_restaurant_size": {
+      "LARGE": {
+        "n": 1322,
+        "mae": 38.324,
+        "bias_actual_minus_predicted": 1.197,
+        "mean_actual": 61.682
+      },
+      "MEDIUM": {
+        "n": 1032,
+        "mae": 18.33,
+        "bias_actual_minus_predicted": 1.742,
+        "mean_actual": 29.667
+      },
+      "SMALL": {
+        "n": 2666,
+        "mae": 10.442,
+        "bias_actual_minus_predicted": -0.191,
+        "mean_actual": 16.29
+      }
+    },
+    "by_meal_period": {
+      "ALL_DAY": {
+        "n": 236,
+        "mae": 24.778,
+        "bias_actual_minus_predicted": 3.652,
+        "mean_actual": 37.136
+      },
+      "BREAKFAST": {
+        "n": 694,
+        "mae": 9.369,
+        "bias_actual_minus_predicted": 0.35,
+        "mean_actual": 14.813
+      },
+      "DINNER": {
+        "n": 2045,
+        "mae": 20.94,
+        "bias_actual_minus_predicted": 0.66,
+        "mean_actual": 33.274
+      },
+      "LUNCH": {
+        "n": 2045,
+        "mae": 20.658,
+        "bias_actual_minus_predicted": 0.204,
+        "mean_actual": 33.496
+      }
+    },
+    "by_horizon_days": {
+      "1-7": {
+        "n": 1136,
+        "mae": 19.286,
+        "bias_actual_minus_predicted": 0.789,
+        "mean_actual": 31.009
+      },
+      "15-31": {
+        "n": 2741,
+        "mae": 19.502,
+        "bias_actual_minus_predicted": 0.402,
+        "mean_actual": 30.93
+      },
+      "8-14": {
+        "n": 1143,
+        "mae": 19.295,
+        "bias_actual_minus_predicted": 0.764,
+        "mean_actual": 31.132
+      }
+    },
+    "by_holiday": {
+      "holiday": {
+        "n": 261,
+        "mae": 25.102,
+        "bias_actual_minus_predicted": -1.268,
+        "mean_actual": 30.835
+      },
+      "non_holiday": {
+        "n": 4759,
+        "mae": 19.094,
+        "bias_actual_minus_predicted": 0.673,
+        "mean_actual": 31.003
+      }
+    },
+    "by_special_event": {
+      "no_event": {
+        "n": 4916,
+        "mae": 19.199,
+        "bias_actual_minus_predicted": 0.535,
+        "mean_actual": 30.454
+      },
+      "special_event": {
+        "n": 104,
+        "mae": 29.173,
+        "bias_actual_minus_predicted": 2.34,
+        "mean_actual": 56.49
+      }
+    }
+  },
+  "actual_vs_predicted_test_samples": [
+    {
+      "restaurant_id": "SYN-R001",
+      "date": "2026-08-15",
+      "meal_period": "DINNER",
+      "horizon_days": 26,
+      "is_holiday": true,
+      "actual": 13,
+      "predicted": 19,
+      "interval": [
+        6,
+        35
+      ],
+      "baseline": 14
+    },
+    {
+      "restaurant_id": "SYN-R001",
+      "date": "2026-08-28",
+      "meal_period": "DINNER",
+      "horizon_days": 27,
+      "is_holiday": true,
+      "actual": 42,
+      "predicted": 16,
+      "interval": [
+        4,
+        32
+      ],
+      "baseline": 19
+    },
+    {
+      "restaurant_id": "SYN-R001",
+      "date": "2026-09-14",
+      "meal_period": "DINNER",
+      "horizon_days": 21,
+      "is_holiday": true,
+      "actual": 39,
+      "predicted": 18,
+      "interval": [
+        5,
+        35
+      ],
+      "baseline": 13
+    },
+    {
+      "restaurant_id": "SYN-R004",
+      "date": "2026-09-08",
+      "meal_period": "LUNCH",
+      "horizon_days": 21,
+      "is_holiday": false,
+      "actual": 21,
+      "predicted": 11,
+      "interval": [
+        0,
+        24
+      ],
+      "baseline": 12
+    },
+    {
+      "restaurant_id": "SYN-R004",
+      "date": "2026-09-26",
+      "meal_period": "LUNCH",
+      "horizon_days": 8,
+      "is_holiday": false,
+      "actual": 4,
+      "predicted": 8,
+      "interval": [
+        0,
+        21
+      ],
+      "baseline": 10
+    },
+    {
+      "restaurant_id": "SYN-R005",
+      "date": "2026-08-27",
+      "meal_period": "DINNER",
+      "horizon_days": 15,
+      "is_holiday": false,
+      "actual": 0,
+      "predicted": 15,
+      "interval": [
+        1,
+        33
+      ],
+      "baseline": 10
+    },
+    {
+      "restaurant_id": "SYN-R010",
+      "date": "2026-08-12",
+      "meal_period": "DINNER",
+      "horizon_days": 7,
+      "is_holiday": false,
+      "actual": 41,
+      "predicted": 16,
+      "interval": [
+        3,
+        34
+      ],
+      "baseline": 28
+    },
+    {
+      "restaurant_id": "SYN-R019",
+      "date": "2026-09-30",
+      "meal_period": "DINNER",
+      "horizon_days": 7,
+      "is_holiday": false,
+      "actual": 35,
+      "predicted": 21,
+      "interval": [
+        0,
+        48
+      ],
+      "baseline": 10
+    },
+    {
+      "restaurant_id": "SYN-R019",
+      "date": "2026-08-30",
+      "meal_period": "LUNCH",
+      "horizon_days": 17,
+      "is_holiday": false,
+      "actual": 0,
+      "predicted": 27,
+      "interval": [
+        10,
+        48
+      ],
+      "baseline": 24
+    },
+    {
+      "restaurant_id": "SYN-R022",
+      "date": "2026-10-03",
+      "meal_period": "DINNER",
+      "horizon_days": 8,
+      "is_holiday": false,
+      "actual": 70,
+      "predicted": 64,
+      "interval": [
+        10,
+        132
+      ],
+      "baseline": 67
+    },
+    {
+      "restaurant_id": "SYN-R026",
+      "date": "2026-09-22",
+      "meal_period": "LUNCH",
+      "horizon_days": 13,
+      "is_holiday": false,
+      "actual": 105,
+      "predicted": 80,
+      "interval": [
+        0,
+        181
+      ],
+      "baseline": 93
+    },
+    {
+      "restaurant_id": "SYN-R028",
+      "date": "2026-08-31",
+      "meal_period": "LUNCH",
+      "horizon_days": 18,
+      "is_holiday": false,
+      "actual": 27,
+      "predicted": 23,
+      "interval": [
+        5,
+        47
+      ],
+      "baseline": 26
+    },
+    {
+      "restaurant_id": "SYN-R031",
+      "date": "2026-09-23",
+      "meal_period": "DINNER",
+      "horizon_days": 25,
+      "is_holiday": false,
+      "actual": 11,
+      "predicted": 43,
+      "interval": [
+        0,
+        100
+      ],
+      "baseline": 35
+    },
+    {
+      "restaurant_id": "SYN-R034",
+      "date": "2026-10-05",
+      "meal_period": "BREAKFAST",
+      "horizon_days": 15,
+      "is_holiday": false,
+      "actual": 0,
+      "predicted": 7,
+      "interval": [
+        0,
+        16
+      ],
+      "baseline": 11
+    },
+    {
+      "restaurant_id": "SYN-R038",
+      "date": "2026-10-01",
+      "meal_period": "ALL_DAY",
+      "horizon_days": 17,
+      "is_holiday": false,
+      "actual": 0,
+      "predicted": 10,
+      "interval": [
+        0,
+        23
+      ],
+      "baseline": 9
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+# Build context is the repo root; only these paths are sent to the builder.
+*
+!backend/package.json
+!backend/package-lock.json
+!backend/tsconfig.json
+!backend/tsconfig.build.json
+!backend/src
+!database/migrations
+!deployment/docker/backend-entrypoint.sh

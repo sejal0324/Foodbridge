@@ -1,0 +1,112 @@
+@import 'tailwindcss';
+
+/*
+ * FoodBridge design tokens (Tailwind v4). Dark theme only.
+ * - canvas: page background; surface / surface-raised: cards and overlays.
+ *   Cards are separated from the canvas by elevation (shadow-card: a faint
+ *   hairline plus a soft drop shadow), not by boxed borders.
+ * - line: the one low-contrast divider colour (border-line / divide-line).
+ * - brand-600 (#2E7D32) is the primary action colour (5.1:1 with white text);
+ *   brand-300/400 are for text and focus rings on dark surfaces. Green is the
+ *   only accent; other hues are reserved for statuses that carry meaning.
+ * - Type scale: page title text-2xl/semibold; card title text-base/semibold;
+ *   body text-sm; secondary text text-sm slate-400; meta text-xs slate-500.
+ */
+@theme {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  --color-canvas: #0b1120;
+  --color-surface: #111a2c;
+  --color-surface-raised: #16213a;
+  --color-surface-hover: #1b2843;
+  --color-line: rgb(255 255 255 / 0.06);
+
+  --color-brand-50: #e8f5e9;
+  --color-brand-100: #c8e6c9;
+  --color-brand-200: #a5d6a7;
+  --color-brand-300: #81c784;
+  --color-brand-400: #66bb6a;
+  --color-brand-500: #43a047;
+  --color-brand-600: #2e7d32;
+  --color-brand-700: #256d29;
+  --color-brand-800: #1b5e20;
+  --color-brand-900: #123f16;
+
+  --radius-card: 0.875rem;
+  --shadow-card: 0 0 0 1px rgb(255 255 255 / 0.045), 0 1px 2px 0 rgb(0 0 0 / 0.3);
+
+  --animate-fade-in: fade-in 160ms ease-out;
+  --animate-slide-up: slide-up 180ms ease-out;
+  --animate-pulse-dot: pulse-dot 1.4s ease-in-out infinite;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse-dot {
+    0%, 80%, 100% { opacity: 0.25; }
+    40% { opacity: 1; }
+  }
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-canvas font-sans text-white antialiased;
+    min-height: 100dvh;
+  }
+  ::selection {
+    background: rgb(46 125 50 / 0.45);
+  }
+  /* Visible keyboard focus everywhere. Components may refine it. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-400);
+    outline-offset: 2px;
+  }
+  input[type='date']::-webkit-calendar-picker-indicator,
+  input[type='datetime-local']::-webkit-calendar-picker-indicator,
+  input[type='time']::-webkit-calendar-picker-indicator {
+    filter: invert(0.8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Leaflet sits inside dark cards: keep controls readable. */
+.leaflet-container {
+  font-family: var(--font-sans);
+  background: #1e293b;
+}
+.leaflet-control-attribution {
+  font-size: 11px;
+}
+.fb-marker {
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.45);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
